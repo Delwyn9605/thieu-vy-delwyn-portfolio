@@ -321,6 +321,8 @@ function place(){
   });
   place.H=y0-30;
 }
+var titles=[];
+function fixDots(){titles.forEach(function(o){if(!o.right)return;var w=o.tx.getComputedTextLength();if(w>0)o.dc.setAttribute('cx',o.x-w-13)})}
 function build(){
   mobile=window.innerWidth<=700;
   var W=380,H=915;if(mobile){place()}
@@ -329,7 +331,7 @@ function build(){
   place();if(mobile)H=place.H;
   svg.setAttribute('viewBox','0 0 '+W+' '+H);
   while(svg.firstChild)svg.removeChild(svg.firstChild);
-  els={nodes:{},edges:[]};
+  els={nodes:{},edges:[]};titles=[];
   var eg=mk('g',{});svg.appendChild(eg);
   E.forEach(function(e){
     var a=nodeById[e[0]],b=nodeById[e[1]];
@@ -343,6 +345,7 @@ function build(){
     var tx=mk('text',{x:right?t[0]:t[0]+18,y:t[1],class:'cat-t'});if(right)tx.setAttribute('text-anchor','end');tx.textContent=CATS[c].name;svg.appendChild(tx);
     var dc=mk('circle',{cy:t[1]-4,r:5,fill:CATS[c].color});svg.appendChild(dc);
     dc.setAttribute('cx',right?t[0]-tx.getComputedTextLength()-13:t[0]+5);
+    titles.push({tx:tx,dc:dc,right:right,x:t[0]});
   });
   N.forEach(function(n){
     var p=n.p;
@@ -360,7 +363,7 @@ function build(){
     g.addEventListener('blur',function(){active=null;paint()});
     svg.appendChild(g);els.nodes[n.id]={ring:ring,dot:dot,texts:texts};
   });
-  paint();
+  fixDots();paint();
 }
 function neighbors(id){var s={};E.forEach(function(e){if(e[0]===id)s[e[1]]=1;if(e[1]===id)s[e[0]]=1});return s}
 function paint(){
@@ -385,6 +388,17 @@ rb.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)r
 svg.addEventListener('click',function(e){if(e.target===svg){active=null;paint()}});
 build();
 var _rt;window.addEventListener('resize',function(){clearTimeout(_rt);_rt=setTimeout(build,120)});
+/* Rebuild once fonts and layout are final, so measured title widths and the SVG width are correct on the first visit */
+var _lw=0,_lh=0;
+function rebuildIfChanged(){var w=svg.parentNode.clientWidth,h=window.innerHeight;if(w!==_lw||h!==_lh){_lw=w;_lh=h;clearTimeout(_rt);_rt=setTimeout(build,60)}}
+_lw=svg.parentNode.clientWidth;_lh=window.innerHeight;
+if(document.fonts){
+  document.fonts.ready.then(function(){build();fixDots()});
+  document.fonts.addEventListener&&document.fonts.addEventListener('loadingdone',function(){fixDots()});
+  try{document.fonts.load('500 12px "Be Vietnam Pro"').then(function(){fixDots()})}catch(e){}
+}
+window.addEventListener('load',function(){build();fixDots();setTimeout(fixDots,300)});
+if(window.ResizeObserver)new ResizeObserver(rebuildIfChanged).observe(svg.parentNode);
 })();
 
 (function(){function fit(){document.querySelectorAll('.photo-note').forEach(function(n){n.classList.remove('one');var lh=parseFloat(getComputedStyle(n).lineHeight)||24;if(n.getBoundingClientRect().height<lh*1.6){var r=document.createRange();r.selectNodeContents(n);if(r.getBoundingClientRect().width>n.clientWidth*.8)n.classList.add('one')}})}
