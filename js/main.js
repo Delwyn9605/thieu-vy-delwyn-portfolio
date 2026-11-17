@@ -399,6 +399,8 @@ if(document.fonts){
 }
 window.addEventListener('load',function(){build();fixDots();setTimeout(fixDots,300)});
 if(window.ResizeObserver)new ResizeObserver(rebuildIfChanged).observe(svg.parentNode);
+/* Safety net: re-measure the title dots for the first seconds, whatever order fonts and layout settle in */
+(function(){var n=0,iv=setInterval(function(){fixDots();if(++n>48)clearInterval(iv)},250);document.addEventListener('visibilitychange',fixDots)})();
 })();
 
 (function(){function fit(){document.querySelectorAll('.photo-note').forEach(function(n){n.classList.remove('one');var lh=parseFloat(getComputedStyle(n).lineHeight)||24;if(n.getBoundingClientRect().height<lh*1.6){var r=document.createRange();r.selectNodeContents(n);if(r.getBoundingClientRect().width>n.clientWidth*.8)n.classList.add('one')}})}
